@@ -50,7 +50,43 @@ function render() {
   $("duel").hidden = state.screen !== "duel";
   if (state.screen === "setup") renderSetup();
   else renderDuel();
+  updateWakeLock();
 }
+
+/* ---------- Wake lock ---------- */
+
+// Keeps the screen on during a duel. The browser drops the lock whenever the
+// page is hidden, so it's re-requested when the page becomes visible again.
+let wakeLock = null;
+let wakeLockPending = false;
+
+function wantsWakeLock() {
+  return state.screen === "duel" && document.visibilityState === "visible";
+}
+
+async function updateWakeLock() {
+  if (!("wakeLock" in navigator) || wakeLockPending) return;
+
+  if (wantsWakeLock() && !wakeLock) {
+    wakeLockPending = true;
+    try {
+      wakeLock = await navigator.wakeLock.request("screen");
+      wakeLock.addEventListener("release", () => {
+        wakeLock = null;
+      });
+    } catch {
+      // Can be refused (e.g. battery saver). Not critical, so ignore it.
+    } finally {
+      wakeLockPending = false;
+    }
+    // The duel may have ended while the request was in flight.
+    if (!wantsWakeLock()) updateWakeLock();
+  } else if (!wantsWakeLock() && wakeLock) {
+    wakeLock.release().catch(() => {});
+  }
+}
+
+document.addEventListener("visibilitychange", updateWakeLock);
 
 /* ---------- Setup ---------- */
 
@@ -141,6 +177,14 @@ function renderDuel() {
     card.querySelector(".half").addEventListener("click", () => {
       setLP(i, Math.ceil(state.lp[i] / 2));
     });
+    card.querySelector(".forfeit").addEventListener("click", async () => {
+      const confirmed = await confirmDialog({
+        title: "Forfeit?",
+        message: `${displayName(i)} surrenders the duel.`,
+        ok: "Forfeit",
+      });
+      if (confirmed) setLP(i, 0);
+    });
 
     list.append(card);
     updateCard(i);
@@ -161,7 +205,7 @@ function updateCard(i, delta = 0) {
 
   lpEl.textContent = state.lp[i];
   card.classList.toggle("defeated", defeated);
-  card.querySelectorAll(".quick button").forEach((btn) => {
+  card.querySelectorAll(".quick button, .forfeit").forEach((btn) => {
     btn.disabled = defeated;
   });
 

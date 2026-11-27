@@ -8,6 +8,8 @@ A lightweight Life Point tracker for Yu-Gi-Oh! duels. It runs entirely in the br
 - **Fast LP changes**: type an amount and add or subtract it, or use the one-tap buttons for -500, -1000, -2000 and halving
 - **Keyboard friendly**: press Enter in the amount field to subtract
 - **Defeat tracking**: players at 0 LP are dimmed and marked as defeated
+- **Forfeit button** to concede a duel in one tap
+- **Keeps the screen awake** during a duel, so your phone doesn't lock mid-game
 - **Coin toss and 6-sided die** built into the duel screen
 - **Remembers your duel**: state is saved in the browser, so a refresh or closed tab doesn't lose LP totals
 - **Confirmation dialogs** before resetting or leaving a duel, so a misclick can't wipe the game
@@ -37,8 +39,11 @@ Each player has their own card showing their current LP.
 | Add a custom amount      | Type it in the amount field, then press **+**              |
 | Quick damage             | Tap **-500**, **-1000** or **-2000**                       |
 | Halve LP                 | Tap **½** (rounds up, as per the official rules)           |
+| Forfeit                  | Tap the white flag next to the LP, then confirm            |
 
-LP never goes below 0. When a player hits 0 they are marked as **Defeated** and the quick buttons are disabled, but you can still add LP back with **+** if needed.
+LP never goes below 0. When a player hits 0 they are marked as **Defeated** and the quick buttons and forfeit flag are disabled, but you can still add LP back with **+** if needed.
+
+While the duel screen is open the app asks the browser to keep the screen on. This uses the [Screen Wake Lock API](https://developer.mozilla.org/en-US/docs/Web/API/Screen_Wake_Lock_API), which is supported by most current browsers but only works in a secure context (HTTPS or `localhost`). If you open the app from another device over plain HTTP, such as your computer's local IP address, the screen will lock as normal. Battery saver modes may also refuse it.
 
 Below the player cards:
 
