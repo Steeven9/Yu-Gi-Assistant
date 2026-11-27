@@ -1,0 +1,86 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1, viewport-fit=cover"
+    />
+    <meta name="theme-color" content="#0f1115" />
+    <title>Yu-Gi-Oh! LP Tracker</title>
+    <link rel="stylesheet" href="style.css" />
+  </head>
+  <body>
+    <main id="setup" class="screen" hidden>
+      <h1>LP Tracker</h1>
+      <form id="setup-form">
+        <div class="field">
+          <span class="label">Players</span>
+          <div class="stepper">
+            <button type="button" id="count-dec" aria-label="Fewer players">
+              −
+            </button>
+            <output id="count" aria-live="polite"></output>
+            <button type="button" id="count-inc" aria-label="More players">
+              +
+            </button>
+          </div>
+        </div>
+
+        <label class="field">
+          <span class="label">Starting LP</span>
+          <input
+            type="number"
+            id="start-lp"
+            inputmode="numeric"
+            min="1"
+            max="999999"
+            step="1"
+            required
+          />
+        </label>
+
+        <div class="field">
+          <span class="label">Names</span>
+          <div id="names" class="names"></div>
+        </div>
+
+        <button type="submit" class="primary">Start Duel</button>
+      </form>
+    </main>
+
+    <main id="duel" class="screen" hidden>
+      <header class="topbar">
+        <button type="button" id="to-setup">Setup</button>
+        <button type="button" id="reset">Reset LP</button>
+      </header>
+      <div id="players" class="players"></div>
+    </main>
+
+    <template id="player-tpl">
+      <section class="player">
+        <div class="player-head">
+          <h2 class="name"></h2>
+          <span class="status">Defeated</span>
+          <button type="button" class="half" aria-label="Halve LP">½</button>
+        </div>
+        <div class="lp"></div>
+        <div class="controls">
+          <button type="button" class="minus" aria-label="Subtract">−</button>
+          <input
+            type="number"
+            class="amount"
+            inputmode="numeric"
+            min="1"
+            step="1"
+            placeholder="Amount"
+            aria-label="Amount"
+          />
+          <button type="button" class="plus" aria-label="Add">+</button>
+        </div>
+      </section>
+    </template>
+
+    <script src="app.js"></script>
+  </body>
+</html>
