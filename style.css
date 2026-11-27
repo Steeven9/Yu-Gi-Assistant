@@ -189,12 +189,14 @@ h1 {
 
 .player-head {
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
   gap: 0.5rem;
 }
 
 .name {
   flex: 1;
+  min-width: 6rem;
   margin: 0;
   font-size: 1.05rem;
   font-weight: 600;
@@ -203,7 +205,23 @@ h1 {
   white-space: nowrap;
 }
 
-.half {
+.quick {
+  display: flex;
+  gap: 0.25rem;
+  margin-left: auto;
+}
+
+.quick button {
+  padding: 0.3rem 0.5rem;
+  font-size: 0.85rem;
+  font-variant-numeric: tabular-nums;
+}
+
+.quick [data-amount] {
+  color: var(--red);
+}
+
+.quick .half {
   padding: 0.3rem 0.8rem;
   font-size: 1rem;
 }
@@ -269,6 +287,181 @@ h1 {
 
 .flash-up {
   animation: flash-up 0.5s ease-out;
+}
+
+/* ---------- Confirm dialog ---------- */
+
+.confirm {
+  width: min(340px, calc(100% - 2rem));
+  padding: 0;
+  background: var(--card);
+  color: var(--text);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.5);
+}
+
+.confirm[open] {
+  animation: confirm-in 0.15s ease-out;
+}
+
+.confirm::backdrop {
+  background: rgba(0, 0, 0, 0.6);
+  backdrop-filter: blur(2px);
+}
+
+.confirm form {
+  padding: 1.25rem;
+}
+
+.confirm h2 {
+  margin: 0 0 0.4rem;
+  font-size: 1.15rem;
+  color: var(--accent);
+}
+
+.confirm p {
+  margin: 0 0 1.25rem;
+  color: var(--muted);
+}
+
+.confirm-actions {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.confirm-actions button {
+  flex: 1;
+}
+
+.confirm-actions .primary {
+  padding: 0.6rem 1rem;
+  font-size: 1rem;
+}
+
+@keyframes confirm-in {
+  from {
+    opacity: 0;
+    transform: scale(0.95);
+  }
+}
+
+/* ---------- Coin toss & die ---------- */
+
+.tools {
+  display: flex;
+  justify-content: center;
+  gap: 1.5rem;
+  margin-top: 1.5rem;
+}
+
+.tool {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.5rem;
+  /* Fixed width so changing result text doesn't shift the layout. */
+  width: 9rem;
+}
+
+.coin {
+  width: 4.5rem;
+  height: 4.5rem;
+  padding: 0;
+  border-radius: 50%;
+  border: 3px solid var(--accent);
+  color: var(--accent);
+  font-size: 1.75rem;
+  font-weight: 700;
+}
+
+.coin:disabled,
+.die:disabled {
+  opacity: 1;
+}
+
+.coin.heads {
+  background: var(--accent);
+  color: #1a1400;
+}
+
+.coin.flipping {
+  animation: coin-flip 0.8s ease-out;
+}
+
+.tool-result {
+  margin: 0;
+  color: var(--muted);
+  font-size: 0.95rem;
+  text-align: center;
+}
+
+.die {
+  width: 4.5rem;
+  height: 4.5rem;
+  padding: 0;
+  border-radius: 0.9rem;
+  border: 3px solid var(--accent);
+  color: var(--accent);
+  font-size: 1.75rem;
+  font-weight: 700;
+}
+
+.die.rolled {
+  display: grid;
+  grid-template: repeat(3, 1fr) / repeat(3, 1fr);
+  place-items: center;
+  padding: 0.45rem;
+}
+
+.die .pip {
+  width: 0.75rem;
+  height: 0.75rem;
+  border-radius: 50%;
+  background: currentColor;
+}
+
+.die.rolling {
+  animation: die-roll 0.8s ease-out;
+}
+
+@keyframes die-roll {
+  25% {
+    transform: translate(-0.4rem, -1.2rem) rotate(200deg);
+  }
+  50% {
+    transform: translate(0.4rem, -0.4rem) rotate(400deg);
+  }
+  75% {
+    transform: translate(-0.2rem, -0.8rem) rotate(600deg);
+  }
+  to {
+    transform: translate(0, 0) rotate(720deg);
+  }
+}
+
+@keyframes coin-flip {
+  from {
+    transform: translateY(0) rotateX(0);
+  }
+  50% {
+    transform: translateY(-2.5rem) rotateX(900deg);
+  }
+  to {
+    transform: translateY(0) rotateX(1800deg);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  /* Keep a near-instant animation so animationend still fires. */
+  .coin.flipping,
+  .die.rolling {
+    animation-duration: 1ms;
+  }
+
+  .confirm[open] {
+    animation: none;
+  }
 }
 
 @keyframes flash-down {

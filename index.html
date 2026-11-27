@@ -9,10 +9,11 @@
     <meta name="theme-color" content="#0f1115" />
     <title>Yu-Gi-Oh! LP Tracker</title>
     <link rel="stylesheet" href="style.css" />
+    <meta name="authors" content="Soulsbros" />
   </head>
   <body>
     <main id="setup" class="screen" hidden>
-      <h1>LP Tracker</h1>
+      <h1>Yu-Gi-Oh! LP Tracker</h1>
       <form id="setup-form">
         <div class="field">
           <span class="label">Players</span>
@@ -55,14 +56,66 @@
         <button type="button" id="reset">Reset LP</button>
       </header>
       <div id="players" class="players"></div>
+      <section class="tools">
+        <div class="tool">
+          <button type="button" id="coin" class="coin" aria-label="Toss a coin">
+            ?
+          </button>
+          <p id="coin-result" class="tool-result" aria-live="polite">
+            Tap to toss a coin
+          </p>
+        </div>
+        <div class="tool">
+          <button type="button" id="die" class="die" aria-label="Roll a die">
+            ?
+          </button>
+          <p id="die-result" class="tool-result" aria-live="polite">
+            Tap to roll a die
+          </p>
+        </div>
+      </section>
     </main>
+
+    <dialog id="confirm" class="confirm" aria-labelledby="confirm-title">
+      <form method="dialog">
+        <h2 id="confirm-title"></h2>
+        <p id="confirm-message"></p>
+        <div class="confirm-actions">
+          <button value="cancel" autofocus>Cancel</button>
+          <button value="ok" id="confirm-ok" class="primary"></button>
+        </div>
+      </form>
+    </dialog>
 
     <template id="player-tpl">
       <section class="player">
         <div class="player-head">
           <h2 class="name"></h2>
           <span class="status">Defeated</span>
-          <button type="button" class="half" aria-label="Halve LP">½</button>
+          <div class="quick">
+            <button
+              type="button"
+              data-amount="500"
+              aria-label="Subtract 500 LP"
+            >
+              −500
+            </button>
+            <button
+              type="button"
+              data-amount="1000"
+              aria-label="Subtract 1000 LP"
+            >
+              −1000
+            </button>
+            <button
+              type="button"
+              data-amount="2000"
+              aria-label="Subtract 2000 LP"
+            >
+              −2000
+            </button>
+            <button type="button" class="half" aria-label="Halve LP">½</button>
+          </div>
         </div>
         <div class="lp"></div>
         <div class="controls">
@@ -75,6 +128,7 @@
             step="1"
             placeholder="Amount"
             aria-label="Amount"
+            enterkeyhint="done"
           />
           <button type="button" class="plus" aria-label="Add">+</button>
         </div>

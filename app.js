@@ -128,6 +128,15 @@ function renderDuel() {
 
     card.querySelector(".minus").addEventListener("click", () => apply(-1));
     card.querySelector(".plus").addEventListener("click", () => apply(1));
+    amount.addEventListener("keydown", (e) => {
+      if (e.key !== "Enter") return;
+      e.preventDefault();
+      apply(-1);
+    });
+    card.querySelectorAll("[data-amount]").forEach((btn) => {
+      const value = Number(btn.dataset.amount);
+      btn.addEventListener("click", () => setLP(i, state.lp[i] - value));
+    });
     // Official rule: when halving LP, round up.
     card.querySelector(".half").addEventListener("click", () => {
       setLP(i, Math.ceil(state.lp[i] / 2));
@@ -152,7 +161,9 @@ function updateCard(i, delta = 0) {
 
   lpEl.textContent = state.lp[i];
   card.classList.toggle("defeated", defeated);
-  card.querySelector(".half").disabled = defeated;
+  card.querySelectorAll(".quick button").forEach((btn) => {
+    btn.disabled = defeated;
+  });
 
   if (delta) {
     lpEl.classList.remove("flash-down", "flash-up");
@@ -161,15 +172,127 @@ function updateCard(i, delta = 0) {
   }
 }
 
-$("reset").addEventListener("click", () => {
-  if (!confirm(`Reset everyone to ${state.startLP} LP?`)) return;
+/* ---------- Coin toss & die ---------- */
+
+// Unbiased random integer in [0, n) for small n, via rejection sampling.
+function randomInt(n) {
+  const limit = 256 - (256 % n);
+  const buf = new Uint8Array(1);
+  do crypto.getRandomValues(buf);
+  while (buf[0] >= limit);
+  return buf[0] % n;
+}
+
+$("coin").addEventListener("click", () => {
+  const coin = $("coin");
+  const heads = randomInt(2) === 0;
+
+  coin.disabled = true;
+  coin.textContent = "";
+  coin.classList.remove("heads", "tails");
+  $("coin-result").textContent = "Tossing…";
+  coin.classList.add("flipping");
+
+  coin.addEventListener(
+    "animationend",
+    () => {
+      coin.classList.remove("flipping");
+      coin.classList.add(heads ? "heads" : "tails");
+      coin.textContent = heads ? "H" : "T";
+      $("coin-result").textContent = heads ? "Heads!" : "Tails!";
+      coin.disabled = false;
+    },
+    { once: true },
+  );
+});
+
+// Pip positions on a 3x3 grid (0 = top-left, 8 = bottom-right).
+const DIE_FACES = [
+  [4],
+  [0, 8],
+  [0, 4, 8],
+  [0, 2, 6, 8],
+  [0, 2, 4, 6, 8],
+  [0, 2, 3, 5, 6, 8],
+];
+
+function showDieFace(value) {
+  const pips = DIE_FACES[value - 1];
+  const cells = Array.from({ length: 9 }, (_, i) => {
+    const cell = document.createElement("span");
+    if (pips.includes(i)) cell.className = "pip";
+    return cell;
+  });
+  $("die").replaceChildren(...cells);
+}
+
+$("die").addEventListener("click", () => {
+  const die = $("die");
+  const value = randomInt(6) + 1;
+
+  die.disabled = true;
+  die.classList.add("rolled", "rolling");
+  $("die-result").textContent = "Rolling…";
+  // Flicker through faces while it tumbles.
+  const flicker = setInterval(() => showDieFace(randomInt(6) + 1), 90);
+  showDieFace(randomInt(6) + 1);
+
+  die.addEventListener(
+    "animationend",
+    () => {
+      clearInterval(flicker);
+      die.classList.remove("rolling");
+      showDieFace(value);
+      $("die-result").textContent = `Rolled a ${value}!`;
+      die.disabled = false;
+    },
+    { once: true },
+  );
+});
+
+/* ---------- Confirm dialog ---------- */
+
+function confirmDialog({ title, message, ok }) {
+  const dialog = $("confirm");
+  $("confirm-title").textContent = title;
+  $("confirm-message").textContent = message;
+  $("confirm-ok").textContent = ok;
+  // Esc and backdrop clicks close without a value, which counts as cancel.
+  dialog.returnValue = "";
+  dialog.showModal();
+  return new Promise((resolve) => {
+    dialog.addEventListener(
+      "close",
+      () => resolve(dialog.returnValue === "ok"),
+      { once: true },
+    );
+  });
+}
+
+$("confirm").addEventListener("click", (e) => {
+  // The form fills the dialog, so a click on the dialog itself is the backdrop.
+  if (e.target === e.currentTarget) e.currentTarget.close();
+});
+
+$("reset").addEventListener("click", async () => {
+  const confirmed = await confirmDialog({
+    title: "Reset LP?",
+    message: `Everyone goes back to ${state.startLP} LP.`,
+    ok: "Reset",
+  });
+  if (!confirmed) return;
   state.lp = Array(state.count).fill(state.startLP);
   save();
   renderDuel();
 });
 
-$("to-setup").addEventListener("click", () => {
-  if (!confirm("Go back to setup? Starting a new duel will reset LP.")) return;
+$("to-setup").addEventListener("click", async () => {
+  const confirmed = await confirmDialog({
+    title: "Back to setup?",
+    message: "Starting a new duel will reset LP.",
+    ok: "Go to setup",
+  });
+  if (!confirmed) return;
   state.screen = "setup";
   save();
   render();
