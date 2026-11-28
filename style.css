@@ -299,6 +299,51 @@ h1 {
   color: var(--red);
 }
 
+/* ---------- Who goes first ---------- */
+
+/* While choosing, each card shows a die in place of its LP and controls. */
+#duel:not(.choosing) .start-die,
+#duel:not(.choosing) .start-bar,
+.choosing .quick,
+.choosing .lp-row,
+.choosing .controls,
+.choosing .tools,
+.choosing #reset {
+  display: none;
+}
+
+.start-die {
+  align-self: center;
+  margin: 0.25rem 0;
+}
+
+.player.out {
+  opacity: 0.4;
+}
+
+.player.starts {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 1px var(--accent);
+}
+
+.start-bar {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.75rem;
+  margin-top: 1.5rem;
+}
+
+.start-result {
+  margin: 0;
+  color: var(--muted);
+  text-align: center;
+}
+
+.start-bar .primary {
+  min-width: 10rem;
+}
+
 .flash-down {
   animation: flash-down 0.5s ease-out;
 }
@@ -514,7 +559,7 @@ footer a {
   text-decoration: none;
 }
 
-footer-link:hover {
+footer a:hover {
   color: #2563eb;
 }
 

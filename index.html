@@ -56,6 +56,10 @@
         <button type="button" id="reset">Reset LP</button>
       </header>
       <div id="players" class="players"></div>
+      <section class="start-bar">
+        <p id="start-result" class="start-result" aria-live="polite"></p>
+        <button type="button" id="go" class="primary">Go</button>
+      </section>
       <section class="tools">
         <div class="tool">
           <button type="button" id="coin" class="coin" aria-label="Toss a coin">
@@ -117,6 +121,13 @@
             <button type="button" class="half" aria-label="Halve LP">½</button>
           </div>
         </div>
+        <button
+          type="button"
+          class="die start-die"
+          aria-label="Roll to decide who goes first"
+        >
+          ?
+        </button>
         <div class="lp-row">
           <div class="lp"></div>
           <button

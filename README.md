@@ -10,7 +10,7 @@ A lightweight Life Point tracker for Yu-Gi-Oh! duels. It runs entirely in the br
 - **Defeat tracking**: players at 0 LP are dimmed and marked as defeated
 - **Forfeit button** to concede a duel in one tap
 - **Keeps the screen awake** during a duel, so your phone doesn't lock mid-game
-- **Coin toss and 6-sided die** built into the duel screen
+- **Coin toss and 6-sided die** built into the duel screen, plus a dice roll at the start to decide who goes first
 - **Remembers your duel**: state is saved in the browser, so a refresh or closed tab doesn't lose LP totals
 - **Confirmation dialogs** before resetting or leaving a duel, so a misclick can't wipe the game
 
@@ -28,6 +28,12 @@ If you prefer serving it over HTTP (for example to open it from your phone on th
 2. Set the **Starting LP**.
 3. Optionally enter player names. Blank names default to "Player 1", "Player 2", and so on.
 4. Press **Start Duel**.
+
+### Deciding who goes first
+
+When the duel starts, each player's card shows a die instead of their LP. Each player taps their die to roll it, and the highest roll goes first. The winning card is highlighted in gold. If the highest roll is a tie, only the tied players roll again.
+
+Press **Go** to reveal the LP counters and start playing. You can press **Go** at any time, for example if you decided who goes first some other way.
 
 ### During the duel
 

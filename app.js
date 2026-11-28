@@ -16,6 +16,8 @@ function defaultState() {
     // Kept at max length so names survive lowering and raising the player count.
     names: Array(MAX_PLAYERS).fill(""),
     lp: [],
+    // True between "Start Duel" and "Go", while rolling to see who goes first.
+    choosing: false,
   };
 }
 
@@ -136,6 +138,7 @@ $("setup-form").addEventListener("submit", (e) => {
   state.startLP = lp;
   state.lp = Array(state.count).fill(lp);
   state.screen = "duel";
+  state.choosing = true;
   save();
   render();
 });
@@ -146,10 +149,14 @@ function renderDuel() {
   const list = $("players");
   const tpl = $("player-tpl");
   list.replaceChildren();
+  $("duel").classList.toggle("choosing", state.choosing);
 
   for (let i = 0; i < state.count; i++) {
     const card = tpl.content.firstElementChild.cloneNode(true);
     card.querySelector(".name").textContent = displayName(i);
+
+    const startDie = card.querySelector(".start-die");
+    startDie.addEventListener("click", () => rollForStart(i, startDie));
 
     const amount = card.querySelector(".amount");
     const apply = (sign) => {
@@ -189,6 +196,8 @@ function renderDuel() {
     list.append(card);
     updateCard(i);
   }
+
+  if (state.choosing) resetStartRoll();
 }
 
 function setLP(i, value) {
@@ -215,6 +224,60 @@ function updateCard(i, delta = 0) {
     lpEl.classList.add(delta < 0 ? "flash-down" : "flash-up");
   }
 }
+
+/* ---------- Who goes first ---------- */
+
+// Kept in memory only: a refresh during the roll simply starts it over.
+// `contenders` shrinks to the tied players when the highest roll is a tie.
+let startRoll = { rolls: [], contenders: [] };
+
+function resetStartRoll() {
+  startRoll = {
+    rolls: Array(state.count).fill(null),
+    contenders: Array.from({ length: state.count }, (_, i) => i),
+  };
+  $("start-result").textContent = "Tap each die to roll. Highest goes first.";
+}
+
+async function rollForStart(i, die) {
+  const value = await rollDie(die);
+  if (!die.isConnected) return; // The cards were re-rendered mid-roll.
+  startRoll.rolls[i] = value;
+  die.disabled = true;
+  resolveStartRoll();
+}
+
+function resolveStartRoll() {
+  const { rolls, contenders } = startRoll;
+  if (contenders.some((i) => rolls[i] === null)) return;
+
+  const best = Math.max(...contenders.map((i) => rolls[i]));
+  const tied = contenders.filter((i) => rolls[i] === best);
+  const cards = $("players").children;
+  for (const i of contenders) {
+    cards[i].classList.toggle("out", !tied.includes(i));
+  }
+
+  if (tied.length === 1) {
+    cards[tied[0]].classList.add("starts");
+    $("start-result").textContent = `${displayName(tied[0])} goes first!`;
+    return;
+  }
+
+  startRoll.contenders = tied;
+  for (const i of tied) {
+    rolls[i] = null;
+    cards[i].querySelector(".start-die").disabled = false;
+  }
+  const names = new Intl.ListFormat("en").format(tied.map(displayName));
+  $("start-result").textContent = `Tie between ${names}! Roll again.`;
+}
+
+$("go").addEventListener("click", () => {
+  state.choosing = false;
+  save();
+  renderDuel();
+});
 
 /* ---------- Coin toss & die ---------- */
 
@@ -260,38 +323,50 @@ const DIE_FACES = [
   [0, 2, 3, 5, 6, 8],
 ];
 
-function showDieFace(value) {
+function showDieFace(die, value) {
   const pips = DIE_FACES[value - 1];
   const cells = Array.from({ length: 9 }, (_, i) => {
     const cell = document.createElement("span");
     if (pips.includes(i)) cell.className = "pip";
     return cell;
   });
-  $("die").replaceChildren(...cells);
+  die.replaceChildren(...cells);
 }
 
-$("die").addEventListener("click", () => {
-  const die = $("die");
+// Animates a `.die` button and resolves with the rolled value (1-6).
+function rollDie(die) {
   const value = randomInt(6) + 1;
 
   die.disabled = true;
   die.classList.add("rolled", "rolling");
-  $("die-result").textContent = "Rolling…";
-  // Flicker through faces while it tumbles.
-  const flicker = setInterval(() => showDieFace(randomInt(6) + 1), 90);
-  showDieFace(randomInt(6) + 1);
+  // Flicker through faces while it tumbles. If the die is removed from the
+  // page mid-roll, animationend never fires, so stop the flicker here too.
+  const flicker = setInterval(() => {
+    if (die.isConnected) showDieFace(die, randomInt(6) + 1);
+    else clearInterval(flicker);
+  }, 90);
+  showDieFace(die, randomInt(6) + 1);
 
-  die.addEventListener(
-    "animationend",
-    () => {
+  return new Promise((resolve) => {
+    const finish = () => {
+      die.removeEventListener("animationend", finish);
+      die.removeEventListener("animationcancel", finish);
       clearInterval(flicker);
       die.classList.remove("rolling");
-      showDieFace(value);
-      $("die-result").textContent = `Rolled a ${value}!`;
+      showDieFace(die, value);
       die.disabled = false;
-    },
-    { once: true },
-  );
+      resolve(value);
+    };
+    die.addEventListener("animationend", finish);
+    // Fired instead of animationend if the die is hidden mid-roll.
+    die.addEventListener("animationcancel", finish);
+  });
+}
+
+$("die").addEventListener("click", async () => {
+  $("die-result").textContent = "Rolling…";
+  const value = await rollDie($("die"));
+  $("die-result").textContent = `Rolled a ${value}!`;
 });
 
 /* ---------- Confirm dialog ---------- */
