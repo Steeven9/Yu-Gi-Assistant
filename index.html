@@ -42,6 +42,20 @@
         </label>
 
         <div class="field">
+          <span class="label">Games per match</span>
+          <div class="stepper">
+            <button type="button" id="games-dec" aria-label="Fewer games">
+              −
+            </button>
+            <output id="games" aria-live="polite"></output>
+            <button type="button" id="games-inc" aria-label="More games">
+              +
+            </button>
+          </div>
+          <span id="games-hint" class="hint"></span>
+        </div>
+
+        <div class="field">
           <span class="label">Names</span>
           <div id="names" class="names"></div>
         </div>
@@ -53,8 +67,15 @@
     <main id="duel" class="screen" hidden>
       <header class="topbar">
         <button type="button" id="to-setup">Setup</button>
+        <span id="match-info" class="match-info"></span>
         <button type="button" id="reset">Reset LP</button>
       </header>
+      <section id="result" class="result" aria-live="polite" hidden>
+        <div class="result-crown" aria-hidden="true">👑</div>
+        <h2 id="result-title" class="result-title"></h2>
+        <p id="result-score" class="result-score"></p>
+        <button type="button" id="next-game" class="primary"></button>
+      </section>
       <div id="players" class="players"></div>
       <section class="start-bar">
         <p id="start-result" class="start-result" aria-live="polite"></p>
@@ -129,6 +150,7 @@
           ?
         </button>
         <div class="lp-row">
+          <div class="crowns" role="img"></div>
           <div class="lp"></div>
           <button
             type="button"

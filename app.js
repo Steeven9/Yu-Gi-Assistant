@@ -5,6 +5,10 @@ const MIN_PLAYERS = 1;
 const MAX_PLAYERS = 10;
 const DEFAULT_PLAYERS = 2;
 const DEFAULT_LP = 8000;
+// Best-of counts are kept odd so a 2-player match can't end level.
+const MIN_BEST_OF = 1;
+const MAX_BEST_OF = 9;
+const DEFAULT_BEST_OF = 3;
 
 const $ = (id) => document.getElementById(id);
 
@@ -18,6 +22,12 @@ function defaultState() {
     lp: [],
     // True between "Start Duel" and "Go", while rolling to see who goes first.
     choosing: false,
+    bestOf: DEFAULT_BEST_OF,
+    wins: [],
+    game: 1,
+    // Player credited with the current game's win, or null while it's ongoing
+    // (or a draw). Tracked so the point can be taken back if LP is corrected.
+    gameWinner: null,
   };
 }
 
@@ -28,6 +38,10 @@ function loadState() {
       const state = { ...defaultState(), ...saved };
       if (state.screen === "duel" && state.lp.length !== state.count) {
         state.screen = "setup";
+      }
+      if (state.wins.length !== state.count) {
+        state.wins = Array(state.count).fill(0);
+        state.gameWinner = null;
       }
       return state;
     }
@@ -46,6 +60,112 @@ function save() {
 function displayName(i) {
   return state.names[i].trim() || `Player ${i + 1}`;
 }
+
+/* ---------- Match ---------- */
+
+function isMatch() {
+  return state.count >= 2;
+}
+
+function winsNeeded() {
+  return Math.floor(state.bestOf / 2) + 1;
+}
+
+function alivePlayers() {
+  return state.lp.flatMap((lp, i) => (lp > 0 ? [i] : []));
+}
+
+function isGameOver() {
+  return isMatch() && alivePlayers().length <= 1;
+}
+
+function matchWinner() {
+  const i = state.wins.findIndex((w) => w >= winsNeeded());
+  return i === -1 ? null : i;
+}
+
+// Credits the last player standing, and takes the point back if an LP
+// correction means they're no longer alone.
+function updateGameWinner() {
+  if (!isMatch()) return;
+  const alive = alivePlayers();
+  const winner = alive.length === 1 ? alive[0] : null;
+  if (winner === state.gameWinner) return;
+  if (state.gameWinner !== null) state.wins[state.gameWinner]--;
+  if (winner !== null) state.wins[winner]++;
+  state.gameWinner = winner;
+}
+
+function scoreLine() {
+  return state.wins.map((w, i) => `${displayName(i)} ${w}`).join(" · ");
+}
+
+function renderMatch() {
+  const match = isMatch();
+  const needed = winsNeeded();
+  const champ = matchWinner();
+  const cards = $("players").children;
+
+  for (let i = 0; i < state.count; i++) {
+    const crowns = cards[i].querySelector(".crowns");
+    crowns.hidden = !match;
+    crowns.setAttribute("aria-label", `${state.wins[i]} of ${needed} wins`);
+    crowns.replaceChildren(
+      ...Array.from({ length: needed }, (_, k) => {
+        const crown = document.createElement("span");
+        crown.className = k < state.wins[i] ? "crown won" : "crown";
+        crown.textContent = "👑";
+        return crown;
+      }),
+    );
+    cards[i].classList.toggle("winner", i === state.gameWinner);
+  }
+
+  $("match-info").hidden = !match;
+  $("match-info").textContent = `Game ${state.game} · Best of ${state.bestOf}`;
+  $("duel").classList.toggle("match-over", champ !== null);
+
+  const result = $("result");
+  result.hidden = !isGameOver();
+  result.classList.toggle("victory", champ !== null);
+  if (result.hidden) return;
+
+  if (champ !== null) {
+    $("result-title").textContent = `${displayName(champ)} wins the match!`;
+    $("next-game").textContent = "New match";
+  } else {
+    $("result-title").textContent =
+      state.gameWinner === null
+        ? `Game ${state.game} is a draw`
+        : `${displayName(state.gameWinner)} wins game ${state.game}!`;
+    $("next-game").textContent = "Next game";
+  }
+  $("result-score").textContent = scoreLine();
+}
+
+// Starts a fresh game. Any point awarded for the finished game is kept.
+function nextGame() {
+  if (isGameOver()) state.game++;
+  state.lp = Array(state.count).fill(state.startLP);
+  state.gameWinner = null;
+  save();
+  renderDuel();
+}
+
+function newMatch() {
+  state.lp = Array(state.count).fill(state.startLP);
+  state.wins = Array(state.count).fill(0);
+  state.game = 1;
+  state.gameWinner = null;
+  state.choosing = true;
+  save();
+  renderDuel();
+}
+
+$("next-game").addEventListener("click", () => {
+  if (matchWinner() !== null) newMatch();
+  else nextGame();
+});
 
 function render() {
   $("setup").hidden = state.screen !== "setup";
@@ -97,6 +217,12 @@ function renderSetup() {
   $("count-dec").disabled = state.count <= MIN_PLAYERS;
   $("count-inc").disabled = state.count >= MAX_PLAYERS;
   $("start-lp").value = state.startLP;
+  $("games").textContent = state.bestOf;
+  $("games-dec").disabled = state.bestOf <= MIN_BEST_OF;
+  $("games-inc").disabled = state.bestOf >= MAX_BEST_OF;
+  const needed = winsNeeded();
+  $("games-hint").textContent =
+    `First to ${needed} ${needed === 1 ? "win" : "wins"}`;
 
   const names = $("names");
   names.replaceChildren();
@@ -127,6 +253,18 @@ function changeCount(delta) {
 $("count-dec").addEventListener("click", () => changeCount(-1));
 $("count-inc").addEventListener("click", () => changeCount(1));
 
+function changeBestOf(delta) {
+  state.bestOf = Math.min(
+    MAX_BEST_OF,
+    Math.max(MIN_BEST_OF, state.bestOf + delta),
+  );
+  save();
+  renderSetup();
+}
+
+$("games-dec").addEventListener("click", () => changeBestOf(-2));
+$("games-inc").addEventListener("click", () => changeBestOf(2));
+
 $("start-lp").addEventListener("input", (e) => {
   state.startLP = e.target.value;
   save();
@@ -137,6 +275,9 @@ $("setup-form").addEventListener("submit", (e) => {
   const lp = parseInt($("start-lp").value, 10);
   state.startLP = lp;
   state.lp = Array(state.count).fill(lp);
+  state.wins = Array(state.count).fill(0);
+  state.game = 1;
+  state.gameWinner = null;
   state.screen = "duel";
   state.choosing = true;
   save();
@@ -197,14 +338,17 @@ function renderDuel() {
     updateCard(i);
   }
 
+  renderMatch();
   if (state.choosing) resetStartRoll();
 }
 
 function setLP(i, value) {
   const prev = state.lp[i];
   state.lp[i] = Math.max(0, value);
+  updateGameWinner();
   save();
   updateCard(i, state.lp[i] - prev);
+  renderMatch();
 }
 
 function updateCard(i, delta = 0) {
@@ -400,9 +544,7 @@ $("reset").addEventListener("click", async () => {
     ok: "Reset",
   });
   if (!confirmed) return;
-  state.lp = Array(state.count).fill(state.startLP);
-  save();
-  renderDuel();
+  nextGame();
 });
 
 $("to-setup").addEventListener("click", async () => {
