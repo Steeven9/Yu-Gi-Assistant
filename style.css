@@ -20,10 +20,13 @@
   display: none !important;
 }
 
+html {
+  background: var(--bg);
+}
+
 html,
 body {
   margin: 0;
-  background: var(--bg);
   color: var(--text);
   font-family:
     system-ui,
@@ -32,6 +35,18 @@ body {
     Roboto,
     sans-serif;
   -webkit-tap-highlight-color: transparent;
+}
+
+/* A fixed layer rather than background-attachment: fixed, which iOS ignores.
+   The tint keeps text that sits directly on the background readable. */
+body::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  background:
+    linear-gradient(rgba(15, 17, 21, 0.55), rgba(15, 17, 21, 0.55)),
+    url("bg.jpg") center / cover no-repeat;
 }
 
 button,
